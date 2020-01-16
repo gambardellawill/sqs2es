@@ -1,17 +1,18 @@
 import argparse
 import boto3
-import requests
 from elasticsearch import Elasticsearch
 
 parser = argparse.ArgumentParser(description='Redirects messages from SQS into an ElasticSearch index.')
 
-parser.add_argument('-s', '--source', dest='source', type=str, required=True, help='The name of the SQS queue to be saved.')
+parser.add_argument('-s', '--source', dest='source', type=str, required=True, help='The name of the SQS queue messages will be read from.')
 
-parser.add_argument('-d', '--destination', dest='destination', type=str, required=True, help='The name of the SQS queue to be saved.')
+parser.add_argument('-d', '--destination', dest='destination', type=str, required=True, help='The name of the SQS queue messages will be redirected to.')
 
 parser.add_argument('-c', '--count', dest='message_count', type=str, required=False, help='The number of messages to be retrieved.')
 
-parser.add_argument('-e', '--es_host', dest='elasticsearch_host', type=str, required=True, help='The number of messages to be retrieved.')
+parser.add_argument('-e', '--es_host', dest='elasticsearch_host', type=str,
+    required=True,
+    help='Reachable address of an Elasticsearch instance written as host_address:port')
 
 sqs = boto3.resource('sqs')
 
@@ -68,4 +69,4 @@ if __name__ == "__main__":
 
         remaining_messages -= transfer_count
     
-    print("Transfer complete.")
+    print("\033[0;32mTransfer complete.\033[0m")
