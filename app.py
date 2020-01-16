@@ -11,12 +11,14 @@ parser.add_argument('-d', '--destination', dest='destination', type=str, require
 
 parser.add_argument('-c', '--count', dest='message_count', type=str, required=False, help='The number of messages to be retrieved.')
 
-parser.add_argument('-e', '--es_host', dest='elasticsearch_host', type=str, required=False, help='The number of messages to be retrieved.')
+parser.add_argument('-e', '--es_host', dest='elasticsearch_host', type=str, required=True, help='The number of messages to be retrieved.')
 
 sqs = boto3.resource('sqs')
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    es_connect = Elasticsearch([args.elasticsearch_host])
    
     try:
         source_queue = sqs.get_queue_by_name(QueueName=args.source)
@@ -44,14 +46,13 @@ if __name__ == "__main__":
     
     remaining_messages = int(messages_to_transfer)
 
-
     while remaining_messages > 0 :
         if remaining_messages > 10: # Maximum batch size
             transfer_count = 10
         else:
             transfer_count = remaining_messages
         
-        print("Transferring {} of {} messages...".format(transfer_count, remaining_messages))
+        print("Transferring {} of {} messages...\n".format(transfer_count, remaining_messages))
 
         response = source_queue.receive_messages(MaxNumberOfMessages=transfer_count)
         destination_messages = list()
@@ -62,8 +63,9 @@ if __name__ == "__main__":
         confirmation = destination_queue.send_messages(Entries=destination_messages)
 
         for source_message in response:
+            es_connect.create(index=args.source.lower(),body=source_message.body,doc_type="message", id=source_message.message_id)
             source_message.delete()
 
         remaining_messages -= transfer_count
-
-        
+    
+    print("Transfer complete.")
